@@ -1,0 +1,1083 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+     4→import {
+     5→  ArrowLeft,
+     6→  Plus,
+     7→  Search,
+     8→  Pencil,
+     9→  Trash2,
+    10→  X,
+    11→  Upload,
+    12→  Loader2,
+    13→  Eye,
+    14→  EyeOff,
+    15→  Star,
+    16→  Image as ImageIcon,
+    17→  Check,
+    18→  LogOut,
+    19→  Package,
+    20→  ChevronDown,
+    21→  Smartphone,
+    22→} from "lucide-react";
+    23→import { useNavigation } from "@/lib/store";
+    24→import { BRANDS } from "@/data/site-data";
+    25→
+    26→// ─── Types ───────────────────────────────────────────────────────────────────
+    27→
+    28→interface Product {
+    29→  id: string;
+    30→  name: string;
+    31→  brand: string;
+    32→  slug: string;
+    33→  modelNo: string | null;
+    34→  price: string | null;
+    35→  image: string | null;
+    36→  description: string | null;
+    37→  featured: boolean;
+    38→  active: boolean;
+    39→  createdAt: string;
+    40→  updatedAt: string;
+    41→}
+    42→
+    43→interface ProductFormData {
+    44→  name: string;
+    45→  brand: string;
+    46→  slug: string;
+    47→  modelNo: string;
+    48→  price: string;
+    49→  description: string;
+    50→  featured: boolean;
+    51→  active: boolean;
+    52→  image: string;
+    53→}
+    54→
+    55→const ADMIN_PASSWORD = "sssadmin123";
+    56→
+    57→// ─── Login Screen ────────────────────────────────────────────────────────────
+    58→
+    59→function LoginScreen({ onLogin }: { onLogin: () => void }) {
+    60→  const [password, setPassword] = useState("");
+    61→  const [showPassword, setShowPassword] = useState(false);
+    62→  const [error, setError] = useState("");
+    63→  const [loading, setLoading] = useState(false);
+    64→
+    65→  const handleSubmit = (e: React.FormEvent) => {
+    66→    e.preventDefault();
+    67→    setLoading(true);
+    68→    setError("");
+    69→
+    70→    // Simulate brief delay
+    71→    setTimeout(() => {
+    72→      if (password === ADMIN_PASSWORD) {
+    73→        onLogin();
+    74→      } else {
+    75→        setError("Invalid password. Please try again.");
+    76→      }
+    77→      setLoading(false);
+    78→    }, 500);
+    79→  };
+    80→
+    81→  return (
+    82→    <div className="min-h-screen bg-gradient-to-br from-[#002b5c] to-[#001a33] flex items-center justify-center p-4">
+    83→      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    84→        <div className="text-center mb-8">
+    85→          <div className="w-16 h-16 bg-[#002b5c] rounded-xl flex items-center justify-center mx-auto mb-4">
+    86→            <Package className="w-8 h-8 text-white" />
+    87→          </div>
+    88→          <h1 className="text-2xl font-bold text-[#002b5c]">Admin Panel</h1>
+    89→          <p className="text-gray-500 mt-1 text-sm">
+    90→            SSS Enterprises — Product Management
+    91→          </p>
+    92→        </div>
+    93→
+    94→        <form onSubmit={handleSubmit} className="space-y-4">
+    95→          <div>
+    96→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+    97→              Admin Password
+    98→            </label>
+    99→            <div className="relative">
+   100→              <input
+   101→                type={showPassword ? "text" : "password"}
+   102→                value={password}
+   103→                onChange={(e) => setPassword(e.target.value)}
+   104→                placeholder="Enter admin password"
+   105→                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+   106→                autoFocus
+   107→              />
+   108→              <button
+   109→                type="button"
+   110→                onClick={() => setShowPassword(!showPassword)}
+   111→                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+   112→              >
+   113→                {showPassword ? (
+   114→                  <EyeOff className="w-4 h-4" />
+   115→                ) : (
+   116→                  <Eye className="w-4 h-4" />
+   117→                )}
+   118→              </button>
+   119→            </div>
+   120→          </div>
+   121→
+   122→          {error && (
+   123→            <p className="text-red-500 text-sm bg-red-50 p-2.5 rounded-lg">
+   124→              {error}
+   125→            </p>
+   126→          )}
+   127→
+   128→          <button
+   129→            type="submit"
+   130→            disabled={loading || !password}
+   131→            className="w-full bg-[#2563EB] text-white py-2.5 rounded-lg font-semibold hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+   132→          >
+   133→            {loading ? (
+   134→              <Loader2 className="w-4 h-4 animate-spin" />
+   135→            ) : null}
+   136→            Sign In
+   137→          </button>
+   138→        </form>
+   139→
+   140→        <p className="text-xs text-gray-400 text-center mt-6">
+   141→          Default password: sssadmin123
+   142→        </p>
+   143→      </div>
+   144→    </div>
+   145→  );
+   146→}
+   147→
+   148→// ─── Product Form Modal ─────────────────────────────────────────────────────
+   149→
+   150→function ProductFormModal({
+   151→  product,
+   152→  onSave,
+   153→  onCancel,
+   154→}: {
+   155→  product: Product | null;
+   156→  onSave: (data: ProductFormData) => Promise<void>;
+   157→  onCancel: () => void;
+   158→}) {
+   159→  const [form, setForm] = useState<ProductFormData>({
+   160→    name: "",
+   161→    brand: "",
+   162→    slug: "",
+   163→    modelNo: "",
+   164→    price: "",
+   165→    description: "",
+   166→    featured: false,
+   167→    active: true,
+   168→    image: "",
+   169→  });
+   170→  const [uploading, setUploading] = useState(false);
+   171→  const [saving, setSaving] = useState(false);
+   172→  const [uploadError, setUploadError] = useState("");
+   173→  const fileInputRef = useRef<HTMLInputElement>(null);
+   174→
+   175→  const isEditing = !!product;
+   176→
+   177→  useEffect(() => {
+   178→    if (product) {
+   179→      setForm({
+   180→        name: product.name,
+   181→        brand: product.brand,
+   182→        slug: product.slug,
+   183→        modelNo: product.modelNo || "",
+   184→        price: product.price || "",
+   185→        description: product.description || "",
+   186→        featured: product.featured,
+   187→        active: product.active,
+   188→        image: product.image || "",
+   189→      });
+   190→    }
+   191→  }, [product]);
+   192→
+   193→  const handleBrandChange = (brandName: string) => {
+   194→    const brand = BRANDS.find((b) => b.name === brandName);
+   195→    setForm((prev) => ({
+   196→      ...prev,
+   197→      brand: brandName,
+   198→      slug: brand?.slug || brandName.toLowerCase().replace(/\s+/g, "-"),
+   199→    }));
+   200→  };
+   201→
+   202→  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   203→    const file = e.target.files?.[0];
+   204→    if (!file) return;
+   205→
+   206→    setUploading(true);
+   207→    setUploadError("");
+   208→
+   209→    const formData = new FormData();
+   210→    formData.append("file", file);
+   211→
+   212→    try {
+   213→      const res = await fetch("/api/upload", {
+   214→        method: "POST",
+   215→        body: formData,
+   216→      });
+   217→      const data = await res.json();
+   218→
+   219→      if (data.success) {
+   220→        setForm((prev) => ({ ...prev, image: data.url }));
+   221→      } else {
+   222→        setUploadError(data.message || "Upload failed");
+   223→      }
+   224→    } catch {
+   225→      setUploadError("Failed to upload image. Please try again.");
+   226→    } finally {
+   227→      setUploading(false);
+   228→    }
+   229→  };
+   230→
+   231→  const handleSave = async () => {
+   232→    if (!form.name || !form.brand || !form.slug) return;
+   233→    setSaving(true);
+   234→    await onSave(form);
+   235→    setSaving(false);
+   236→  };
+   237→
+   238→  return (
+   239→    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+   240→      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+   241→        {/* Header */}
+   242→        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+   243→          <h2 className="text-xl font-bold text-[#002b5c]">
+   244→            {isEditing ? "Edit Product" : "Add New Product"}
+   245→          </h2>
+   246→          <button
+   247→            onClick={onCancel}
+   248→            className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+   249→          >
+   250→            <X className="w-5 h-5 text-gray-500" />
+   251→          </button>
+   252→        </div>
+   253→
+   254→        {/* Form */}
+   255→        <div className="p-6 space-y-4">
+   256→          {/* Brand (Company Name) */}
+   257→          <div>
+   258→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   259→              Company / Brand Name <span className="text-red-500">*</span>
+   260→            </label>
+   261→            <div className="relative">
+   262→              <select
+   263→                value={form.brand}
+   264→                onChange={(e) => handleBrandChange(e.target.value)}
+   265→                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent appearance-none bg-white cursor-pointer"
+   266→              >
+   267→                <option value="">Select Brand</option>
+   268→                {BRANDS.map((brand) => (
+   269→                  <option key={brand.slug} value={brand.name}>
+   270→                    {brand.name}
+   271→                  </option>
+   272→                ))}
+   273→              </select>
+   274→              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+   275→            </div>
+   276→          </div>
+   277→
+   278→          {/* Product Name */}
+   279→          <div>
+   280→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   281→              Product Name <span className="text-red-500">*</span>
+   282→            </label>
+   283→            <input
+   284→              type="text"
+   285→              value={form.name}
+   286→              onChange={(e) =>
+   287→                setForm((prev) => ({ ...prev, name: e.target.value }))
+   288→              }
+   289→              placeholder="e.g. iPhone 15 Pro Max"
+   290→              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+   291→            />
+   292→          </div>
+   293→
+   294→          {/* Model Number */}
+   295→          <div>
+   296→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   297→              Model Number
+   298→            </label>
+   299→            <input
+   300→              type="text"
+   301→              value={form.modelNo}
+   302→              onChange={(e) =>
+   303→                setForm((prev) => ({ ...prev, modelNo: e.target.value }))
+   304→              }
+   305→              placeholder="e.g. A2849, SM-S928B"
+   306→              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+   307→            />
+   308→          </div>
+   309→
+   310→          {/* Price */}
+   311→          <div>
+   312→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   313→              Price (Optional)
+   314→            </label>
+   315→            <input
+   316→              type="text"
+   317→              value={form.price}
+   318→              onChange={(e) =>
+   319→                setForm((prev) => ({ ...prev, price: e.target.value }))
+   320→              }
+   321→              placeholder="e.g. ₹1,29,999 or Price on Request"
+   322→              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+   323→            />
+   324→          </div>
+   325→
+   326→          {/* Description */}
+   327→          <div>
+   328→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   329→              Description
+   330→            </label>
+   331→            <textarea
+   332→              value={form.description}
+   333→              onChange={(e) =>
+   334→                setForm((prev) => ({ ...prev, description: e.target.value }))
+   335→              }
+   336→              placeholder="Product description, features, specifications..."
+   337→              rows={3}
+   338→              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent resize-none"
+   339→            />
+   340→          </div>
+   341→
+   342→          {/* Image Upload */}
+   343→          <div>
+   344→            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+   345→              Product Image
+   346→            </label>
+   347→            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-[#2563EB] transition-colors">
+   348→              {form.image ? (
+   349→                <div className="relative">
+   350→                  <img
+   351→                    src={form.image}
+   352→                    alt="Product"
+   353→                    className="w-full h-48 object-contain bg-gray-50 rounded-lg"
+   354→                  />
+   355→                  <button
+   356→                    type="button"
+   357→                    onClick={() => setForm((prev) => ({ ...prev, image: "" }))}
+   358→                    className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors cursor-pointer"
+   359→                  >
+   360→                    <X className="w-3 h-3" />
+   361→                  </button>
+   362→                </div>
+   363→              ) : (
+   364→                <div
+   365→                  className="flex flex-col items-center justify-center py-6 cursor-pointer"
+   366→                  onClick={() => fileInputRef.current?.click()}
+   367→                >
+   368→                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+   369→                    {uploading ? (
+   370→                      <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
+   371→                    ) : (
+   372→                      <Upload className="w-6 h-6 text-gray-400" />
+   373→                    )}
+   374→                  </div>
+   375→                  <p className="text-sm text-gray-600">
+   376→                    {uploading
+   377→                      ? "Uploading to Cloudinary..."
+   378→                      : "Click to upload image"}
+   379→                  </p>
+   380→                  <p className="text-xs text-gray-400 mt-1">
+   381→                    JPEG, PNG, WebP — Max 5MB
+   382→                  </p>
+   383→                </div>
+   384→              )}
+   385→              <input
+   386→                ref={fileInputRef}
+   387→                type="file"
+   388→                accept="image/jpeg,image/png,image/webp"
+   389→                onChange={handleImageUpload}
+   390→                className="hidden"
+   391→              />
+   392→              {form.image && (
+   393→                <button
+   394→                  type="button"
+   395→                  onClick={() => fileInputRef.current?.click()}
+   396→                  className="mt-2 text-sm text-[#2563EB] hover:underline cursor-pointer"
+   397→                >
+   398→                  Change image
+   399→                </button>
+   400→              )}
+   401→            </div>
+   402→            {uploadError && (
+   403→              <p className="text-red-500 text-xs mt-1">{uploadError}</p>
+   404→            )}
+   405→          </div>
+   406→
+   407→          {/* Featured & Active Toggles */}
+   408→          <div className="flex gap-6">
+   409→            <label className="flex items-center gap-2 cursor-pointer">
+   410→              <input
+   411→                type="checkbox"
+   412→                checked={form.featured}
+   413→                onChange={(e) =>
+   414→                  setForm((prev) => ({
+   415→                    ...prev,
+   416→                    featured: e.target.checked,
+   417→                  }))
+   418→                }
+   419→                className="w-4 h-4 rounded border-gray-300 text-[#2563EB] focus:ring-[#2563EB]"
+   420→              />
+   421→              <Star className="w-4 h-4 text-yellow-500" />
+   422→              <span className="text-sm text-gray-700">Featured</span>
+   423→            </label>
+   424→            <label className="flex items-center gap-2 cursor-pointer">
+   425→              <input
+   426→                type="checkbox"
+   427→                checked={form.active}
+   428→                onChange={(e) =>
+   429→                  setForm((prev) => ({
+   430→                    ...prev,
+   431→                    active: e.target.checked,
+   432→                  }))
+   433→                }
+   434→                className="w-4 h-4 rounded border-gray-300 text-[#2563EB] focus:ring-[#2563EB]"
+   435→              />
+   436→              <Check className="w-4 h-4 text-green-500" />
+   437→              <span className="text-sm text-gray-700">Active</span>
+   438→            </label>
+   439→          </div>
+   440→        </div>
+   441→
+   442→        {/* Footer */}
+   443→        <div className="flex gap-3 p-6 border-t border-gray-100">
+   444→          <button
+   445→            onClick={onCancel}
+   446→            className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+   447→          >
+   448→            Cancel
+   449→          </button>
+   450→          <button
+   451→            onClick={handleSave}
+   452→            disabled={saving || !form.name || !form.brand}
+   453→            className="flex-1 bg-[#2563EB] text-white py-2.5 rounded-lg font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+   454→          >
+   455→            {saving ? (
+   456→              <Loader2 className="w-4 h-4 animate-spin" />
+   457→            ) : null}
+   458→            {isEditing ? "Update Product" : "Add Product"}
+   459→          </button>
+   460→        </div>
+   461→      </div>
+   462→    </div>
+   463→  );
+   464→}
+   465→
+   466→// ─── Delete Confirm Modal ────────────────────────────────────────────────────
+   467→
+   468→function DeleteConfirmModal({
+   469→  product,
+   470→  onConfirm,
+   471→  onCancel,
+   472→}: {
+   473→  product: Product;
+   474→  onConfirm: () => Promise<void>;
+   475→  onCancel: () => void;
+   476→}) {
+   477→  const [deleting, setDeleting] = useState(false);
+   478→
+   479→  const handleDelete = async () => {
+   480→    setDeleting(true);
+   481→    await onConfirm();
+   482→    setDeleting(false);
+   483→  };
+   484→
+   485→  return (
+   486→    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+   487→      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+   488→        <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+   489→          <Trash2 className="w-7 h-7 text-red-500" />
+   490→        </div>
+   491→        <h3 className="text-lg font-bold text-gray-900 text-center">
+   492→          Delete Product?
+   493→        </h3>
+   494→        <p className="text-sm text-gray-500 text-center mt-2">
+   495→          Are you sure you want to delete{" "}
+   496→          <span className="font-semibold text-gray-700">
+   497→            {product.name}
+   498→          </span>
+   499→          ? This action cannot be undone.
+   500→        </p>
+   501→        <div className="flex gap-3 mt-6">
+   502→          <button
+   503→            onClick={onCancel}
+   504→            className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+   505→          >
+   506→            Cancel
+   507→          </button>
+   508→          <button
+   509→            onClick={handleDelete}
+   510→            disabled={deleting}
+   511→            className="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+   512→          >
+   513→            {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+   514→            Delete
+   515→          </button>
+   516→        </div>
+   517→      </div>
+   518→    </div>
+   519→  );
+   520→}
+   521→
+   522→// ─── Admin Dashboard ─────────────────────────────────────────────────────────
+   523→
+   524→function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+   525→  const { navigate } = useNavigation();
+   526→  const [products, setProducts] = useState<Product[]>([]);
+   527→  const [loading, setLoading] = useState(true);
+   528→  const [search, setSearch] = useState("");
+   529→  const [brandFilter, setBrandFilter] = useState("all");
+   530→  const [showForm, setShowForm] = useState(false);
+   531→  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+   532→  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+   533→  const [toast, setToast] = useState("");
+   534→
+   535→  const fetchProducts = useCallback(async () => {
+   536→    try {
+   537→      const params = new URLSearchParams();
+   538→      if (brandFilter !== "all") params.set("brand", brandFilter);
+   539→      if (search) params.set("search", search);
+   540→
+   541→      const res = await fetch(`/api/admin/products?${params.toString()}`);
+   542→      const data = await res.json();
+   543→      if (data.success) {
+   544→        setProducts(data.products);
+   545→      }
+   546→    } catch (error) {
+   547→      console.error("Error fetching products:", error);
+   548→    } finally {
+   549→      setLoading(false);
+   550→    }
+   551→  }, [brandFilter, search]);
+   552→
+   553→  useEffect(() => {
+   554→    fetchProducts();
+   555→  }, [fetchProducts]);
+   556→
+   557→  const showToast = (message: string) => {
+   558→    setToast(message);
+   559→    setTimeout(() => setToast(""), 3000);
+   560→  };
+   561→
+   562→  const handleSave = async (data: ProductFormData) => {
+   563→    try {
+   564→      if (editingProduct) {
+   565→        // Update
+   566→        const res = await fetch(`/api/products/${editingProduct.id}`, {
+   567→          method: "PUT",
+   568→          headers: { "Content-Type": "application/json" },
+   569→          body: JSON.stringify(data),
+   570→        });
+   571→        const result = await res.json();
+   572→        if (result.success) {
+   573→          showToast("Product updated successfully!");
+   574→        } else {
+   575→          showToast("Failed to update product.");
+   576→        }
+   577→      } else {
+   578→        // Create
+   579→        const res = await fetch("/api/products", {
+   580→          method: "POST",
+   581→          headers: { "Content-Type": "application/json" },
+   582→          body: JSON.stringify(data),
+   583→        });
+   584→        const result = await res.json();
+   585→        if (result.success) {
+   586→          showToast("Product added successfully!");
+   587→        } else {
+   588→          showToast(result.message || "Failed to add product.");
+   589→        }
+   590→      }
+   591→      setShowForm(false);
+   592→      setEditingProduct(null);
+   593→      fetchProducts();
+   594→    } catch {
+   595→      showToast("An error occurred. Please try again.");
+   596→    }
+   597→  };
+   598→
+   599→  const handleDelete = async () => {
+   600→    if (!deletingProduct) return;
+   601→    try {
+   602→      const res = await fetch(`/api/products/${deletingProduct.id}`, {
+   603→        method: "DELETE",
+   604→      });
+   605→      const result = await res.json();
+   606→      if (result.success) {
+   607→        showToast("Product deleted successfully!");
+   608→      } else {
+   609→        showToast("Failed to delete product.");
+   610→      }
+   611→      setDeletingProduct(null);
+   612→      fetchProducts();
+   613→    } catch {
+   614→      showToast("An error occurred.");
+   615→      setDeletingProduct(null);
+   616→    }
+   617→  };
+   618→
+   619→  const handleToggleActive = async (product: Product) => {
+   620→    try {
+   621→      await fetch(`/api/products/${product.id}`, {
+   622→        method: "PUT",
+   623→        headers: { "Content-Type": "application/json" },
+   624→        body: JSON.stringify({ active: !product.active }),
+   625→      });
+   626→      fetchProducts();
+   627→      showToast(
+   628→        product.active ? "Product deactivated" : "Product activated"
+   629→      );
+   630→    } catch {
+   631→      showToast("Failed to update product status.");
+   632→    }
+   633→  };
+   634→
+   635→  const handleToggleFeatured = async (product: Product) => {
+   636→    try {
+   637→      await fetch(`/api/products/${product.id}`, {
+   638→        method: "PUT",
+   639→        headers: { "Content-Type": "application/json" },
+   640→        body: JSON.stringify({ featured: !product.featured }),
+   641→      });
+   642→      fetchProducts();
+   643→      showToast(
+   644→        product.featured
+   645→          ? "Removed from featured"
+   646→          : "Marked as featured"
+   647→      );
+   648→    } catch {
+   649→      showToast("Failed to update.");
+   650→    }
+   651→  };
+   652→
+   653→  return (
+   654→    <div className="min-h-screen bg-gray-50">
+   655→      {/* Top Bar */}
+   656→      <header className="bg-[#002b5c] text-white sticky top-0 z-40">
+   657→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   658→          <div className="flex items-center justify-between h-16">
+   659→            <div className="flex items-center gap-4">
+   660→              <button
+   661→                onClick={() => navigate("home")}
+   662→                className="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+   663→                title="Back to Website"
+   664→              >
+   665→                <ArrowLeft className="w-5 h-5" />
+   666→              </button>
+   667→              <div>
+   668→                <h1 className="text-lg font-bold">Admin Panel</h1>
+   669→                <p className="text-xs text-white/60">SSS Enterprises</p>
+   670→              </div>
+   671→            </div>
+   672→            <div className="flex items-center gap-2">
+   673→              <button
+   674→                onClick={() => {
+   675→                  setEditingProduct(null);
+   676→                  setShowForm(true);
+   677→                }}
+   678→                className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+   679→              >
+   680→                <Plus className="w-4 h-4" />
+   681→                <span className="hidden sm:inline">Add Product</span>
+   682→              </button>
+   683→              <button
+   684→                onClick={onLogout}
+   685→                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+   686→              >
+   687→                <LogOut className="w-4 h-4" />
+   688→                <span className="hidden sm:inline">Logout</span>
+   689→              </button>
+   690→            </div>
+   691→          </div>
+   692→        </div>
+   693→      </header>
+   694→
+   695→      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+   696→        {/* Stats Cards */}
+   697→        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+   698→          <div className="bg-white rounded-xl p-4 border border-gray-100">
+   699→            <div className="flex items-center gap-3">
+   700→              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+   701→                <Package className="w-5 h-5 text-[#2563EB]" />
+   702→              </div>
+   703→              <div>
+   704→                <p className="text-2xl font-bold text-gray-900">
+   705→                  {products.length}
+   706→                </p>
+   707→                <p className="text-xs text-gray-500">Total Products</p>
+   708→              </div>
+   709→            </div>
+   710→          </div>
+   711→          <div className="bg-white rounded-xl p-4 border border-gray-100">
+   712→            <div className="flex items-center gap-3">
+   713→              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+   714→                <Check className="w-5 h-5 text-green-500" />
+   715→              </div>
+   716→              <div>
+   717→                <p className="text-2xl font-bold text-gray-900">
+   718→                  {products.filter((p) => p.active).length}
+   719→                </p>
+   720→                <p className="text-xs text-gray-500">Active</p>
+   721→              </div>
+   722→            </div>
+   723→          </div>
+   724→          <div className="bg-white rounded-xl p-4 border border-gray-100">
+   725→            <div className="flex items-center gap-3">
+   726→              <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+   727→                <Star className="w-5 h-5 text-yellow-500" />
+   728→              </div>
+   729→              <div>
+   730→                <p className="text-2xl font-bold text-gray-900">
+   731→                  {products.filter((p) => p.featured).length}
+   732→                </p>
+   733→                <p className="text-xs text-gray-500">Featured</p>
+   734→              </div>
+   735→            </div>
+   736→          </div>
+   737→          <div className="bg-white rounded-xl p-4 border border-gray-100">
+   738→            <div className="flex items-center gap-3">
+   739→              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+   740→                <ImageIcon className="w-5 h-5 text-purple-500" />
+   741→              </div>
+   742→              <div>
+   743→                <p className="text-2xl font-bold text-gray-900">
+   744→                  {products.filter((p) => p.image).length}
+   745→                </p>
+   746→                <p className="text-xs text-gray-500">With Images</p>
+   747→              </div>
+   748→            </div>
+   749→          </div>
+   750→        </div>
+   751→
+   752→        {/* Search & Filter Bar */}
+   753→        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
+   754→          <div className="flex flex-col sm:flex-row gap-3">
+   755→            <div className="relative flex-1">
+   756→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+   757→              <input
+   758→                type="text"
+   759→                placeholder="Search by name, brand, or model number..."
+   760→                value={search}
+   761→                onChange={(e) => setSearch(e.target.value)}
+   762→                className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
+   763→              />
+   764→            </div>
+   765→            <select
+   766→              value={brandFilter}
+   767→              onChange={(e) => setBrandFilter(e.target.value)}
+   768→              className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent bg-white cursor-pointer"
+   769→            >
+   770→              <option value="all">All Brands</option>
+   771→              {BRANDS.map((brand) => (
+   772→                <option key={brand.slug} value={brand.slug}>
+   773→                  {brand.name}
+   774→                </option>
+   775→              ))}
+   776→            </select>
+   777→          </div>
+   778→        </div>
+   779→
+   780→        {/* Product Table */}
+   781→        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+   782→          {loading ? (
+   783→            <div className="p-12 text-center">
+   784→              <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin mx-auto" />
+   785→              <p className="text-gray-500 mt-3">Loading products...</p>
+   786→            </div>
+   787→          ) : products.length === 0 ? (
+   788→            <div className="p-12 text-center">
+   789→              <Smartphone className="w-12 h-12 text-gray-300 mx-auto" />
+   790→              <p className="text-gray-500 mt-3">No products found.</p>
+   791→              <button
+   792→                onClick={() => {
+   793→                  setEditingProduct(null);
+   794→                  setShowForm(true);
+   795→                }}
+   796→                className="mt-3 text-[#2563EB] hover:underline text-sm font-medium cursor-pointer"
+   797→              >
+   798→                Add your first product
+   799→              </button>
+   800→            </div>
+   801→          ) : (
+   802→            <>
+   803→              {/* Desktop Table */}
+   804→              <div className="hidden md:block overflow-x-auto">
+   805→                <table className="w-full">
+   806→                  <thead className="bg-gray-50 border-b border-gray-100">
+   807→                    <tr>
+   808→                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   809→                        Image
+   810→                      </th>
+   811→                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   812→                        Product
+   813→                      </th>
+   814→                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   815→                        Model No
+   816→                      </th>
+   817→                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   818→                        Price
+   819→                      </th>
+   820→                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   821→                        Status
+   822→                      </th>
+   823→                      <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
+   824→                        Actions
+   825→                      </th>
+   826→                    </tr>
+   827→                  </thead>
+   828→                  <tbody className="divide-y divide-gray-50">
+   829→                    {products.map((product) => (
+   830→                      <tr
+   831→                        key={product.id}
+   832→                        className="hover:bg-gray-50/50 transition-colors"
+   833→                      >
+   834→                        <td className="px-6 py-4">
+   835→                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+   836→                            {product.image ? (
+   837→                              <img
+   838→                                src={product.image}
+   839→                                alt={product.name}
+   840→                                className="w-full h-full object-cover"
+   841→                              />
+   842→                            ) : (
+   843→                              <Smartphone className="w-5 h-5 text-gray-400" />
+   844→                            )}
+   845→                          </div>
+   846→                        </td>
+   847→                        <td className="px-6 py-4">
+   848→                          <div>
+   849→                            <p className="text-sm font-semibold text-gray-900">
+   850→                              {product.name}
+   851→                            </p>
+   852→                            <p className="text-xs text-gray-500">
+   853→                              {product.brand}
+   854→                            </p>
+   855→                          </div>
+   856→                        </td>
+   857→                        <td className="px-6 py-4">
+   858→                          <span className="text-sm text-gray-600 font-mono">
+   859→                            {product.modelNo || "—"}
+   860→                          </span>
+   861→                        </td>
+   862→                        <td className="px-6 py-4">
+   863→                          <span className="text-sm text-gray-600">
+   864→                            {product.price || "—"}
+   865→                          </span>
+   866→                        </td>
+   867→                        <td className="px-6 py-4">
+   868→                          <div className="flex gap-1.5">
+   869→                            <button
+   870→                              onClick={() => handleToggleFeatured(product)}
+   871→                              title={
+   872→                                product.featured
+   873→                                  ? "Remove from featured"
+   874→                                  : "Mark as featured"
+   875→                              }
+   876→                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+   877→                                product.featured
+   878→                                  ? "bg-yellow-100 text-yellow-600"
+   879→                                  : "bg-gray-100 text-gray-400 hover:bg-yellow-50 hover:text-yellow-500"
+   880→                              }`}
+   881→                            >
+   882→                              <Star
+   883→                                className={`w-3.5 h-3.5 ${product.featured ? "fill-yellow-500" : ""}`}
+   884→                              />
+   885→                            </button>
+   886→                            <button
+   887→                              onClick={() => handleToggleActive(product)}
+   888→                              title={
+   889→                                product.active
+   890→                                  ? "Deactivate product"
+   891→                                  : "Activate product"
+   892→                              }
+   893→                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+   894→                                product.active
+   895→                                  ? "bg-green-100 text-green-600"
+   896→                                  : "bg-gray-100 text-gray-400 hover:bg-green-50 hover:text-green-500"
+   897→                              }`}
+   898→                            >
+   899→                              {product.active ? (
+   900→                                <Eye className="w-3.5 h-3.5" />
+   901→                              ) : (
+   902→                                <EyeOff className="w-3.5 h-3.5" />
+   903→                              )}
+   904→                            </button>
+   905→                          </div>
+   906→                        </td>
+   907→                        <td className="px-6 py-4">
+   908→                          <div className="flex items-center justify-end gap-1">
+   909→                            <button
+   910→                              onClick={() => {
+   911→                                setEditingProduct(product);
+   912→                                setShowForm(true);
+   913→                              }}
+   914→                              className="p-2 text-gray-400 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+   915→                              title="Edit"
+   916→                            >
+   917→                              <Pencil className="w-4 h-4" />
+   918→                            </button>
+   919→                            <button
+   920→                              onClick={() => setDeletingProduct(product)}
+   921→                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+   922→                              title="Delete"
+   923→                            >
+   924→                              <Trash2 className="w-4 h-4" />
+   925→                            </button>
+   926→                          </div>
+   927→                        </td>
+   928→                      </tr>
+   929→                    ))}
+   930→                  </tbody>
+   931→                </table>
+   932→              </div>
+   933→
+   934→              {/* Mobile Cards */}
+   935→              <div className="md:hidden divide-y divide-gray-100">
+   936→                {products.map((product) => (
+   937→                  <div key={product.id} className="p-4">
+   938→                    <div className="flex gap-3">
+   939→                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+   940→                        {product.image ? (
+   941→                          <img
+   942→                            src={product.image}
+   943→                            alt={product.name}
+   944→                            className="w-full h-full object-cover"
+   945→                          />
+   946→                        ) : (
+   947→                          <Smartphone className="w-6 h-6 text-gray-400" />
+   948→                        )}
+   949→                      </div>
+   950→                      <div className="flex-1 min-w-0">
+   951→                        <p className="text-sm font-semibold text-gray-900 truncate">
+   952→                          {product.name}
+   953→                        </p>
+   954→                        <p className="text-xs text-gray-500">{product.brand}</p>
+   955→                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+   956→                          {product.modelNo || "No model no"}
+   957→                        </p>
+   958→                      </div>
+   959→                    </div>
+   960→                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+   961→                      <div className="flex gap-1.5">
+   962→                        <button
+   963→                          onClick={() => handleToggleFeatured(product)}
+   964→                          className={`p-1.5 rounded-lg cursor-pointer ${
+   965→                            product.featured
+   966→                              ? "bg-yellow-100 text-yellow-600"
+   967→                              : "bg-gray-100 text-gray-400"
+   968→                          }`}
+   969→                        >
+   970→                          <Star
+   971→                            className={`w-3.5 h-3.5 ${product.featured ? "fill-yellow-500" : ""}`}
+   972→                          />
+   973→                        </button>
+   974→                        <span
+   975→                          className={`text-xs px-2 py-1 rounded-full ${
+   976→                            product.active
+   977→                              ? "bg-green-100 text-green-700"
+   978→                              : "bg-gray-100 text-gray-500"
+   979→                          }`}
+   980→                        >
+   981→                          {product.active ? "Active" : "Inactive"}
+   982→                        </span>
+   983→                      </div>
+   984→                      <div className="flex gap-1">
+   985→                        <button
+   986→                          onClick={() => {
+   987→                            setEditingProduct(product);
+   988→                            setShowForm(true);
+   989→                          }}
+   990→                          className="p-2 text-gray-400 hover:text-[#2563EB] rounded-lg cursor-pointer"
+   991→                        >
+   992→                          <Pencil className="w-4 h-4" />
+   993→                        </button>
+   994→                        <button
+   995→                          onClick={() => setDeletingProduct(product)}
+   996→                          className="p-2 text-gray-400 hover:text-red-500 rounded-lg cursor-pointer"
+   997→                        >
+   998→                          <Trash2 className="w-4 h-4" />
+   999→                        </button>
+  1000→                      </div>
+  1001→                    </div>
+  1002→                  </div>
+  1003→                ))}
+  1004→              </div>
+  1005→            </>
+  1006→          )}
+  1007→        </div>
+  1008→
+  1009→        {/* Cloudinary Connected Banner */}
+  1010→        <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+  1011→          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+  1012→            <Check className="w-4 h-4 text-green-600" />
+  1013→          </div>
+  1014→          <div>
+  1015→            <h3 className="text-sm font-semibold text-green-800">
+  1016→              Cloudinary Connected
+  1017→            </h3>
+  1018→            <p className="text-xs text-green-700">
+  1019→              Image uploads are active. Images will be stored in your Cloudinary account (dn8mqxbuj).
+  1020→            </p>
+  1021→          </div>
+  1022→        </div>
+  1023→      </main>
+  1024→
+  1025→      {/* Modals */}
+  1026→      {showForm && (
+  1027→        <ProductFormModal
+  1028→          product={editingProduct}
+  1029→          onSave={handleSave}
+  1030→          onCancel={() => {
+  1031→            setShowForm(false);
+  1032→            setEditingProduct(null);
+  1033→          }}
+  1034→        />
+  1035→      )}
+  1036→
+  1037→      {deletingProduct && (
+  1038→        <DeleteConfirmModal
+  1039→          product={deletingProduct}
+  1040→          onConfirm={handleDelete}
+  1041→          onCancel={() => setDeletingProduct(null)}
+  1042→        />
+  1043→      )}
+  1044→
+  1045→      {/* Toast */}
+  1046→      {toast && (
+  1047→        <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium z-50 animate-[fadeIn_0.3s_ease]">
+  1048→          {toast}
+  1049→        </div>
+  1050→      )}
+  1051→    </div>
+  1052→  );
+  1053→}
+  1054→
+  1055→// ─── Main Admin Page ─────────────────────────────────────────────────────────
+  1056→
+  1057→export default function AdminPage() {
+  1058→  const { adminAuth, setAdminAuth } = useNavigation();
+  1059→  const mounted = useSyncExternalStore(
+  1060→    () => () => {},
+  1061→    () => true,
+  1062→    () => false
+  1063→  );
+  1064→
+  1065→  if (!adminAuth) {
+  1066→    return (
+  1067→      <LoginScreen
+  1068→        onLogin={() => {
+  1069→          setAdminAuth(true);
+  1070→        }}
+  1071→      />
+  1072→    );
+  1073→  }
+  1074→
+  1075→  return (
+  1076→    <AdminDashboard
+  1077→      onLogout={() => {
+  1078→        setAdminAuth(false);
+  1079→      }}
+  1080→    />
+  1081→  );
+  1082→}
+  1083→
