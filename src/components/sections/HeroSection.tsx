@@ -11,6 +11,12 @@ export default function HeroSection() {
       id="home"
       className="bg-[#002b5c] relative min-h-[90vh] flex items-center overflow-hidden"
       style={{
+
+
+
+
+
+        
         backgroundImage: `url('/images/herosss2.png')`,
         backgroundSize: "cover",
         backgroundPosition: "center center",
