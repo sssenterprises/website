@@ -120,7 +120,7 @@ Work Log:
 - Updated /api/products/[id] route: PUT updates product, DELETE removes product
 - Updated all 24 existing products with model numbers (A2849, SM-S928B, CPH2625, etc.)
 - Rebuilt AdminPage component (~1090 lines) with:
-  - Login screen with password protection (default: sssadmin123)
+  - Login screen with password protection (default: ~UmaMageswari@123)
   - AdminDashboard with: stats cards (total/active/featured/with images), search bar, brand filter dropdown
   - Product table (desktop) / card list (mobile) showing: image thumbnail, name, brand, model number, price, featured/active status toggles, edit/delete actions
   - ProductFormModal for Add/Edit: company/brand dropdown, product name, model number, price, description, Cloudinary image upload with preview, featured & active checkboxes
@@ -139,6 +139,6 @@ Stage Summary:
 - Cloudinary configured with user's credentials (cloud_name: dn8mqxbuj)
 - Upload preset 'sss_products' created in Cloudinary account
 - End-to-end verified: upload image to Cloudinary → create product with image URL → product appears on homepage Popular Products
-- Admin access: click ⚙ icon in footer → password: sssadmin123
+- Admin access: click ⚙ icon in footer → password: ~UmaMageswari@123
 - All 24 products migrated from hardcoded data to SQLite database with model numbers
 - Green "Cloudinary Connected" banner shown in admin dashboard (setup notice removed)

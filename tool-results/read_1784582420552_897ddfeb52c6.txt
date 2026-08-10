@@ -52,7 +52,7 @@
     52→  image: string;
     53→}
     54→
-    55→const ADMIN_PASSWORD = "sssadmin123";
+    55→const ADMIN_PASSWORD = "~UmaMageswari@123";
     56→
     57→// ─── Login Screen ────────────────────────────────────────────────────────────
     58→
@@ -138,7 +138,7 @@
    138→        </form>
    139→
    140→        <p className="text-xs text-gray-400 text-center mt-6">
-   141→          Default password: sssadmin123
+   141→          Default password: ~UmaMageswari@123
    142→        </p>
    143→      </div>
    144→    </div>

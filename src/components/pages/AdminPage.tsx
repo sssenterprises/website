@@ -35,7 +35,7 @@ interface Product {
   createdAt: string;
 }
 
-const ADMIN_PASSWORD = "sssadmin123";
+const ADMIN_PASSWORD = "~UmaMageswari@123";
 
 // ─── Login Screen ────────────────────────────────────────────────────────────
 
@@ -121,9 +121,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             Sign In
           </button>
         </form>
-        <p className="text-xs text-gray-400 text-center mt-6">
-          Default password: sssadmin123
-        </p>
+    
       </div>
     </div>
   );

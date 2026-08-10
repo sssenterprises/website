@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "SSS Enterprises" }],
   icons: {
-    icon: "/favicon.ico",
+    icon: "./sss fav.png",
   },
   openGraph: {
     title: "SSS Enterprises | Trusted Mobile Distribution Partner",

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { CONTACT_INFO } from "@/data/site-data";
 import { useNavigation, type PageName } from "@/lib/store";
+ import Image from "next/image";
 
 const NAV_ITEMS: { label: string; page: PageName }[] = [
   { label: "Home", page: "home" },
@@ -47,14 +48,17 @@ export default function Navbar() {
               className="flex flex-shrink-0 items-center gap-2 cursor-pointer"
               aria-label="Go to Home"
             >
-              <div className="flex flex-col leading-none">
-                <span className="text-2xl font-semibold tracking-[0.2em] text-white lg:text-xl">
-                  SSS
-                </span>
-                <span className="text-[10px] font-semibold uppercase text-white/80 lg:text-xs">
-                  ENTERPRISES
-                </span>
-              </div>
+      
+
+<div className="flex items-center">
+  <Image
+    src="/sss.png"
+    alt="SSS Enterprises"
+    width={120}
+    height={50}
+    className="h-auto w-auto object-contain"
+  />
+</div>
             </button>
 
             {/* Desktop Navigation */}
