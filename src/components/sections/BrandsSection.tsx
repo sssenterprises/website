@@ -6,6 +6,8 @@ import { BRANDS } from "@/data/site-data";
 export default function BrandsSection() {
   const brands = [...BRANDS, ...BRANDS];
 
+  
+
   return (
     <section className="bg-white py-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4">
