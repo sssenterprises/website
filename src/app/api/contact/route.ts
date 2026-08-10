@@ -1,40 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { Resend } from "resend";
 
-export async function POST(request: NextRequest) {
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  const { name, email, phone, message } = body;
+
   try {
-    const body = await request.json();
-    const { name, phone, email, subject, message } = body;
+    await resend.emails.send({
+      from: "Website <noreply@yourdomain.com>",
+      to: "info@yourdomain.com", // Your Hostinger email
+      subject: "New Contact Form Submission",
+      html: `
+        <h2>New Inquiry</h2>
 
-    if (!name || !phone || !email || !message) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Save to database
-    await db.contactSubmission.create({
-      data: { name, phone, email, subject: subject || "General Enquiry", message },
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Phone:</b> ${phone}</p>
+        <p><b>Message:</b></p>
+        <p>${message}</p>
+      `,
     });
 
-    console.log("[Contact Form Submission]", {
-      name,
-      phone,
-      email,
-      subject,
-      timestamp: new Date().toISOString(),
-    });
-
-    return NextResponse.json({
+    return Response.json({
       success: true,
-      message: "Your message has been received. We will get back to you soon.",
     });
   } catch (error) {
-    console.error("Contact form error:", error);
-    return NextResponse.json(
-      { success: false, error: "Invalid request" },
-      { status: 400 }
-    );
+    return Response.json({
+      success: false,
+      error,
+    });
   }
 }

@@ -1,11 +1,36 @@
 import { v2 as cloudinary } from "cloudinary";
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
+function ensureCloudinaryConfigured() {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(
+      "Cloudinary is not configured. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET."
+    );
+  }
+
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true,
+  });
+
+  return { cloudName, apiKey, apiSecret };
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+
+  return "Unknown error";
+}
 
 export interface CloudProduct {
   id: string;
@@ -27,8 +52,7 @@ const DATA_FOLDER = "sss-enterprises/data";
 
 function makeThumbnail(imageUrl: string): string {
   if (!imageUrl) return "";
-  return imageUrl
-    .replace("/upload/", "/upload/w_400,h_400,c_fill,q_auto,f_webp/");
+  return imageUrl.replace("/upload/", "/upload/w_400,h_400,c_fill,q_auto,f_webp/");
 }
 
 function safeJsonParse(text: string): unknown {
@@ -42,6 +66,8 @@ function safeJsonParse(text: string): unknown {
 // ─── Read/Write individual product data files ───────────────────────
 
 async function writeProductData(product: CloudProduct): Promise<void> {
+  ensureCloudinaryConfigured();
+
   const json = JSON.stringify(product);
   const buffer = Buffer.from(json, "utf-8");
   const base64 = `data:application/json;base64,${buffer.toString("base64")}`;
@@ -73,6 +99,8 @@ export async function listProducts(options?: {
   search?: string;
   featured?: boolean;
 }): Promise<CloudProduct[]> {
+  ensureCloudinaryConfigured();
+
   let products: CloudProduct[] = [];
   let cursor: string | undefined;
 
@@ -89,7 +117,6 @@ export async function listProducts(options?: {
     const resources: any[] = result.resources || [];
 
     for (const res of resources) {
-      // Fetch individual product JSON
       try {
         const url = res.secure_url;
         const fetchRes = await fetch(url, { cache: "no-store" });
@@ -141,6 +168,8 @@ export async function createProduct(data: {
   featured: boolean;
   file: File;
 }): Promise<CloudProduct> {
+  ensureCloudinaryConfigured();
+
   // 1. Upload image
   const bytes = await data.file.arrayBuffer();
   const base64 = `data:${data.file.type};base64,${Buffer.from(bytes).toString("base64")}`;
@@ -154,17 +183,13 @@ export async function createProduct(data: {
       {
         folder: FOLDER,
         resource_type: "image",
-        transformation: [
-          { width: 800, height: 800, crop: "limit", quality: "auto" },
-        ],
       },
       (error, result) => {
         if (error) reject(error);
-        else
-          resolve({
-            public_id: (result as any).public_id,
-            secure_url: (result as any).secure_url,
-          });
+        resolve({
+          public_id: (result as any).public_id,
+          secure_url: (result as any).secure_url,
+        });
       }
     );
   });
@@ -224,6 +249,8 @@ export async function replaceProductImage(
   id: string,
   file: File
 ): Promise<string> {
+  ensureCloudinaryConfigured();
+
   const bytes = await file.arrayBuffer();
   const base64 = `data:${file.type};base64,${Buffer.from(bytes).toString("base64")}`;
 
@@ -258,23 +285,170 @@ export async function replaceProductImage(
 }
 
 /**
- * Delete a product
+ * Delete a product - COMPLETE FIXED VERSION
+ * Deletes from both Assets and Folders
  */
 export async function deleteProduct(id: string): Promise<void> {
+  ensureCloudinaryConfigured();
+
   const products = await listProducts();
   const product = products.find((p) => p.id === id);
 
-  // Delete metadata file
-  if (product) {
+  if (!product) {
+    throw new Error(`Product not found: ${id}`);
+  }
+
+  console.log(`🗑️ Deleting product: ${product.productId}`);
+  console.log(`📁 Full public_id: ${product.id}`);
+
+  // 1. Delete metadata JSON file from data folder
+  const metadataResult = await cloudinary.api.delete_resources(
+    [`${DATA_FOLDER}/${product.productId}`],
+    {
+      resource_type: "raw",
+      type: "upload",
+    }
+  );
+  console.log("📄 Metadata delete result:", metadataResult);
+
+  // 2. Delete the image using the FULL public_id (including folder path)
+  const fullPublicId = product.id; // "sss-enterprises/products/x6ujchak6nwfbzvkvuo3"
+  
+  console.log(`🖼️ Attempting to delete image with FULL public_id: ${fullPublicId}`);
+  
+  // METHOD 1: Delete using api.delete_resources (most reliable)
+  const imageResult = await cloudinary.api.delete_resources(
+    [fullPublicId],
+    {
+      resource_type: "image",
+      type: "upload",
+      invalidate: true, // Force CDN cache invalidation
+    }
+  );
+
+  console.log("🗑️ Image delete result (Method 1):", imageResult);
+
+  // Check if deletion was successful
+  const deletionStatus = imageResult.deleted?.[fullPublicId];
+  
+  if (deletionStatus === "deleted") {
+    console.log(`✅ Image deleted successfully from Cloudinary (Assets & Folders)`);
+  } else if (deletionStatus === "not_found") {
+    console.log(`⚠️ Image not found at ${fullPublicId}, trying alternative methods...`);
+    
+    // METHOD 2: Try with just the filename
+    const filename = fullPublicId.split("/").pop();
+    if (filename) {
+      console.log(`🔄 Trying with just filename: ${filename}`);
+      
+      try {
+        const altResult = await cloudinary.uploader.destroy(filename, {
+          resource_type: "image",
+          invalidate: true,
+        });
+        console.log("🗑️ Alternative deletion result (Method 2):", altResult);
+        
+        if (altResult.result === "ok") {
+          console.log(`✅ Image deleted successfully using filename`);
+        }
+      } catch (error) {
+        console.log("Method 2 failed:", error);
+      }
+    }
+    
+    // METHOD 3: Try with the full path using uploader.destroy
+    console.log(`🔄 Trying with full path: ${fullPublicId}`);
     try {
-      await cloudinary.api.delete_resources([`${DATA_FOLDER}/${product.productId}`], {
-        resource_type: "raw",
+      const fullPathResult = await cloudinary.uploader.destroy(fullPublicId, {
+        resource_type: "image",
+        invalidate: true,
       });
-    } catch {
-      // Ignore
+      console.log("🗑️ Full path deletion result (Method 3):", fullPathResult);
+      
+      if (fullPathResult.result === "ok") {
+        console.log(`✅ Image deleted successfully using full path`);
+      }
+    } catch (error) {
+      console.log("Method 3 failed:", error);
+    }
+
+    // METHOD 4: Try to find and delete by URL
+    console.log(`🔄 Trying to extract public_id from URL: ${product.image}`);
+    try {
+      // Extract public_id from URL
+      const url = new URL(product.image);
+      const pathParts = url.pathname.split('/');
+      // Find the 'upload' part and get everything after the version
+      const uploadIndex = pathParts.indexOf('upload');
+      if (uploadIndex !== -1 && uploadIndex + 2 < pathParts.length) {
+        // Skip 'upload' and version number
+        const publicIdFromUrl = pathParts.slice(uploadIndex + 2).join('/');
+        const publicIdWithoutExtension = publicIdFromUrl.replace(/\.[^/.]+$/, '');
+        console.log(`📝 Extracted public_id from URL: ${publicIdWithoutExtension}`);
+        
+        const urlResult = await cloudinary.uploader.destroy(publicIdWithoutExtension, {
+          resource_type: "image",
+          invalidate: true,
+        });
+        console.log("🗑️ URL-based deletion result (Method 4):", urlResult);
+        
+        if (urlResult.result === "ok") {
+          console.log(`✅ Image deleted successfully using URL extraction`);
+        }
+      }
+    } catch (error) {
+      console.log("Method 4 failed:", error);
+    }
+  } else {
+    console.warn(`⚠️ Unexpected deletion status: ${deletionStatus}`);
+  }
+
+  // 3. Verify the image is actually deleted
+  console.log("🔍 Verifying deletion...");
+  try {
+    const verifyResult = await cloudinary.api.resource(fullPublicId, {
+      resource_type: "image",
+    });
+    console.log("❌ Image still exists:", verifyResult);
+  } catch (error: any) {
+    if (error.error?.message?.includes("Not Found") || error.http_code === 404) {
+      console.log("✅ Image successfully deleted (verification passed)");
+    } else {
+      console.log("⚠️ Verification error:", error);
     }
   }
 
-  // Delete image
-  await cloudinary.api.delete_resources([id]);
+  console.log(`✅ Product ${product.productId} deleted successfully from both Assets and Folders`);
+}
+
+/**
+ * Debug function to list all products in the folder
+ */
+export async function debugListFolderContents(): Promise<void> {
+  console.log("🔍 Listing contents of folder:", FOLDER);
+  
+  const result = await cloudinary.api.resources({
+    type: "upload",
+    prefix: FOLDER + "/",
+    resource_type: "image",
+    max_results: 100,
+  });
+  
+  console.log(`📁 Found ${result.resources.length} images in folder`);
+  result.resources.forEach((resource: any) => {
+    console.log(`  - ${resource.public_id} (${resource.format})`);
+  });
+  
+  // Also list data files
+  const dataResult = await cloudinary.api.resources({
+    type: "upload",
+    prefix: DATA_FOLDER + "/",
+    resource_type: "raw",
+    max_results: 100,
+  });
+  
+  console.log(`📄 Found ${dataResult.resources.length} data files in folder`);
+  dataResult.resources.forEach((resource: any) => {
+    console.log(`  - ${resource.public_id}`);
+  });
 }

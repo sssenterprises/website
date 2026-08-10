@@ -146,7 +146,7 @@ export const DEALER_WHY_US = [
 
 export const CONTACT_INFO = {
   phones: ["9080599797", "9787066663"],
-  whatsapp: "9008599797",
+  whatsapp: "9080599797",
   email: "sssenterprises2813@gmail.com",
   address: "First Floor, 1187, West End Colony, Anna Nagar, West Extension,Chennai – 600 050",
   gst: "33AFDPS2813M1ZY",

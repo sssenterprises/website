@@ -4,6 +4,7 @@ import {
   deleteProduct,
   replaceProductImage,
   listProducts,
+  debugListFolderContents,
 } from "@/lib/cloudinary-products";
 
 export const dynamic = "force-dynamic";
@@ -49,26 +50,82 @@ export async function PUT(
     return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error("Error updating product:", error);
+    const message = error instanceof Error ? error.message : "Failed to update product";
     return NextResponse.json(
-      { success: false, message: "Failed to update product" },
+      { success: false, message },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/products/[id] — delete product from Cloudinary
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+
+    console.log(`🗑️ DELETE request received for product ID: ${id}`);
+    
     await deleteProduct(id);
-    return NextResponse.json({ success: true, message: "Product deleted" });
+
+    return NextResponse.json({
+      success: true,
+      message: "Product deleted successfully",
+    });
   } catch (error) {
-    console.error("Error deleting product:", error);
+    console.error("Delete Error:", error);
+
     return NextResponse.json(
-      { success: false, message: "Failed to delete product" },
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to delete product",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/products/[id] — get a single product
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const products = await listProducts();
+    const product = products.find((p) => p.id === id);
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, message: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, product });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch product" },
+      { status: 500 }
+    );
+  }
+}
+
+// Debug endpoint to list folder contents
+export async function HEAD(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await debugListFolderContents();
+    return NextResponse.json({ success: true, message: "Debug info logged" });
+  } catch (error) {
+    console.error("Debug error:", error);
+    return NextResponse.json(
+      { success: false, message: "Debug failed" },
       { status: 500 }
     );
   }

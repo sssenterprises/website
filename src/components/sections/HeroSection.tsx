@@ -9,7 +9,7 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="bg-[#002b5c] relative min-h-[85vh] flex items-center overflow-hidden"
+      className="bg-[#002b5c] relative min-h-[90vh] flex items-center overflow-hidden"
       style={{
         backgroundImage: `url('/images/herosss2.png')`,
         backgroundSize: "cover",
@@ -26,7 +26,7 @@ export default function HeroSection() {
           {/* Left content */}
           <div className="w-full max-w-2xl text-center lg:text-left">
             <span className="inline-block text-white/80 border border-white/20 rounded-full px-4 py-1.5 text-base mb-6">
-              Wholesale Mobile Distributor
+              Wholesale Mobile Distributor  
             </span>
 
             <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
@@ -36,7 +36,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="text-white/80 text-lg mt-4 max-w-lg mx-auto lg:mx-0">
-              Supplying Genuine Mobile Phones to Dealers, Retailers & Bulk Buyers Across India
+              Supplying Genuine Mobile Phones to individuals, Dealers, Retailers & Bulk Buyers Across India
             </p>
 
             {/* Key selling points */}
