@@ -9,8 +9,8 @@ export async function POST(req: Request) {
 
   try {
     await resend.emails.send({
-      from: "Website <noreply@yourdomain.com>",
-      to: "info@yourdomain.com", // Your Hostinger email
+      from: "info@sssmobile.in",
+      to: "info@sssmobile.in", // Your Hostinger email
       subject: "New Contact Form Submission",
       html: `
         <h2>New Inquiry</h2>
