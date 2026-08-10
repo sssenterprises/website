@@ -142,7 +142,7 @@ function PopularProductsPreview() {
         <div className="text-center mt-8 sm:mt-10">
           <button
             onClick={() => navigate("products")}
-            className="inline-flex items-center gap-2 bg-[#002b5c] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#1d4ed8] transition-colors cursor-pointer text-sm sm:text-base"
+            className="inline-flex items-center gap-2 bg-[#002b5c] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#002b5c] transition-colors cursor-pointer text-sm sm:text-base"
           >
             View All Products
             <ArrowRight className="w-4 h-4" />

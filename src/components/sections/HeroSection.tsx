@@ -24,8 +24,7 @@ export default function HeroSection() {
       }}
     >
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-[#002b5c] md:bg-[#002b5c]/70 lg:bg-[#002b5c]/10" />
-      
+ <div className="absolute inset-0 bg-[#002b5c] md:bg-[#002b5c]/70 lg:bg-[#002b5c]/10" />
   
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
         <div className="flex justify-center lg:justify-start">

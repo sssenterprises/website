@@ -106,7 +106,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`absolute left-0 right-0 top-full z-[999] origin-top bg-[#002b5c] border-t border-white/10 shadow-xl transition-all duration-300 ease-in-out lg:hidden ${
+          className={`absolute left-0 right-0 top-full z-[999] origin-top bg-[#001a33] border-t border-white/10 shadow-xl transition-all duration-300 ease-in-out lg:hidden ${
             isOpen
               ? "scale-y-100 opacity-100"
               : "pointer-events-none scale-y-0 opacity-0"
@@ -129,7 +129,7 @@ export default function Navbar() {
 
             <a
               href={`tel:${CONTACT_INFO.phones[0]}`}
-              className="mt-3 flex items-center justify-center gap-2 rounded-md bg-[#2563EB] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1d4ed8]"
+              className="mt-3 flex items-center justify-center gap-2 rounded-md bg-[#001a33] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#001a33]"
             >
               <Phone className="h-4 w-4" />
               Call Now
