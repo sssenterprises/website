@@ -14,8 +14,6 @@ const nextConfig: NextConfig = {
     "192.168.1.15",
   ],
 
-  output: "standalone",
-
   typescript: {
     ignoreBuildErrors: true,
   },
