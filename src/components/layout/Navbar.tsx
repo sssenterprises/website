@@ -52,7 +52,7 @@ export default function Navbar() {
 
 <div className="flex items-center">
   <Image
-    src="/sss.png"
+    src="/sss1.png"
     alt="SSS Enterprises"
     width={120}
     height={50}

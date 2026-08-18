@@ -233,20 +233,6 @@ function ProductFormModal({
             />
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Mobile details, specifications, key features..."
-              rows={4}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent resize-none"
-            />
-          </div>
-
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
