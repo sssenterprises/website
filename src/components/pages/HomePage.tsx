@@ -25,7 +25,7 @@ function PopularProductsPreview() {
   const [loading, setLoading] = useState(true);
 
   // Replace with your actual WhatsApp number (with country code, no + sign)
-  const WHATSAPP_NUMBER = "919876543210"; // Example: 91 for India, then 10-digit number
+  const WHATSAPP_NUMBER = "919080599797"; // Example: 91 for India, then 10-digit number
 
   const fetchProducts = useCallback(async () => {
     try {
