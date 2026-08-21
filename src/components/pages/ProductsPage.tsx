@@ -23,7 +23,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
 
   // Replace with your actual WhatsApp number
-  const WHATSAPP_NUMBER = "919008599797";
+  const WHATSAPP_NUMBER = "919080599797";
 
   const fetchProducts = useCallback(async () => {
     try {
